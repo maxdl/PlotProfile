@@ -1,7 +1,7 @@
 import os.path
 import sys
 
-version = "0.0.1"
+version = "0.1.0"
 date = ("May", "18", "2018")
 title = "PlotProfile"
 author = "Max Larsson"
