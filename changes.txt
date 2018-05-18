@@ -1,0 +1,26 @@
+2018-05-08:
+- Fixed a critical bug, introduced in version 2.0.0, that triggered an error when
+  encountering particles with a negative distance to path.
+- Fixed a bug that caused 'Negative shell' Monte Carlo simulation window to fail.
+- Now shows a warning when determining interpoint distances between particles and
+  simulated points while using a simulation window other than 'Shell'.
+- Changed icon.
+2018-04-20:
+- Minor bug fixes and code cleanup.
+2018-04-16:
+- Now works with Python 3 instead of Python 2.
+- Added Monte Carlo simulations, interpoint distances and clusters
+2014-05-26:
+- Fixed Unicode in coordinate files.
+2014-05-23:
+- Major code cleanup; now largely complies with PEP8, for instance.
+2014-05-14:
+- Fixed DistToPath.pyw.
+- PyExcelerator is again included in the Window binaries.
+2014-05-07:
+- Modified the user interface. It should now show properly also when using OSes
+  other than Windows, and is now also threaded.
+- Options can now be saved in '.disttopath.cfg' in the user's home directory.
+- The input directory is now saved from the previous session in '.disttopath.cfg'.
+- Fixed a bug that prevented the View File dialog from being destroyed when
+  closed.
