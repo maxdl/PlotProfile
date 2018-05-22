@@ -2,7 +2,6 @@ import configparser
 import os
 import os.path
 import sys
-import traceback
 import wx
 from . import plot
 from . import gui
@@ -130,6 +129,7 @@ class Frame(gui.MainFrame):
         set_option('invert_y_axis')
         set_option('plot_simulated_points')
         set_option('plot_random_points')
+        set_option('plot_cluster_convex_hulls')
         try:
             with open(self.configfn, 'w') as f:
                 config.write(f)
@@ -182,6 +182,7 @@ class Frame(gui.MainFrame):
         check_bool_option('invert_y_axis')
         check_bool_option('plot_simulated_points')
         check_bool_option('plot_random_points')
+        check_bool_option('plot_cluster_convex_hulls')
 
     def set_options_in_ui(self):
         if self.opt.scale == 'metric units':
@@ -192,6 +193,7 @@ class Frame(gui.MainFrame):
         self.InvertYAxisCheckBox.SetValue(self.opt.invert_y_axis)
         self.SimulatedCheckBox.SetValue(self.opt.plot_simulated_points)
         self.RandomCheckBox.SetValue(self.opt.plot_random_points)
+        self.ClusterCheckBox.SetValue(self.opt.plot_cluster_convex_hulls)
 
     def set_options_from_ui(self):
         self.input_fn = self.SelectFilePicker.GetPath()
@@ -202,6 +204,7 @@ class Frame(gui.MainFrame):
         self.opt.invert_y_axis = self.InvertYAxisCheckBox.GetValue()
         self.opt.plot_simulated_points = self.SimulatedCheckBox.GetValue()
         self.opt.plot_random_points = self.RandomCheckBox.GetValue()
+        self.opt.plot_cluster_convex_hulls = self.ClusterCheckBox.GetValue()
 
     def show_message(self, s):
         dlg = wx.MessageDialog(self, s, version.title, wx.OK | wx.ICON_INFORMATION)

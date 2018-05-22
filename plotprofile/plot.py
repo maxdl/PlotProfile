@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import matplotlib.pyplot as plt
-import sys
 
 
 class Profile(object):
@@ -25,6 +24,7 @@ class Profile(object):
         self.randomli = []
         self.psdli = []
         self.vesli = []
+        self.clusterli = []
         self.mcli = []
         self.holeli = []
         self.warning = ''
@@ -128,6 +128,8 @@ class Profile(object):
                 self.lpli = self.get_coords(li, 'point')
             elif s.upper() == "RANDOM_POINTS":
                 self.randomli = self.get_coords(li)
+            elif s.split(' ')[0].upper() == 'CLUSTER_CONVEX_HULL':
+                self.clusterli.append(self.get_coords(li, 'closed_path'))
             elif s.split(' ')[0].upper() == 'MONTE_CARLO':
                 self.mcli.append(self.get_coords(li))
             elif s.upper() == 'GRID':
@@ -166,22 +168,26 @@ class Profile(object):
         for hole in self.holeli:
             x, y = zip(*hole)
             plt.plot(x, y, 'r-')
+        if self.opt.plot_cluster_convex_hulls:
+            for cluster in self.clusterli:
+                x, y = zip(*cluster)
+                plt.plot(x, y, 'k-', alpha=0.5)
         if self.pli:
             x, y = zip(*self.pli)
-            plt.plot(x, y, 'ko')
+            plt.plot(x, y, 'ko', markersize=3)
         if self.spli:
             x, y = zip(*self.spli)
-            plt.plot(x, y, 'g.')
+            plt.plot(x, y, 'ko', markersize=2)
         if self.lpli:
             x, y = zip(*self.lpli)
-            plt.plot(x, y, 'ko')
+            plt.plot(x, y, 'go', markersize=4)
         if self.opt.plot_random_points and self.randomli:
             x, y = zip(*self.randomli)
-            plt.plot(x, y, 'y+', alpha=0.5)
+            plt.plot(x, y, 'y+', alpha=0.5, markersize=3)
         if self.opt.plot_simulated_points:
             for mc in self.mcli:
                 x, y = zip(*mc)
-                plt.plot(x, y, "c.", alpha=0.5)
+                plt.plot(x, y, "co", alpha=0.5, markersize=1)
         if self.opt.invert_y_axis:
             plt.gca().invert_yaxis()
         plt.show()
@@ -201,14 +207,13 @@ def read_file(fname):
         finally:
             f.close()
     except IOError:
-        sys.stdout.write("Error: File not found or unreadable")
-        return 0
+        raise ProfileError("File not found or unreadable")
     return s
 
 
 def main(input_fn, opt):
-    profile = Profile(input_fn, opt)
     try:
+        profile = Profile(input_fn, opt)
         profile.parse()
         profile.plot()
     except ProfileError as err:

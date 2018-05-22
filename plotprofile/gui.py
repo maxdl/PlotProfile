@@ -94,6 +94,11 @@ class MainFrame ( wx.Frame ):
         
         OptionsSizer.Add( self.RandomCheckBox, 0, wx.ALL, 5 )
         
+        self. ClusterCheckBox = wx.CheckBox( OptionsSizer.GetStaticBox(), wx.ID_ANY, u"Plot convex hulls of particle clusters", wx.DefaultPosition, wx.DefaultSize, 0 )
+        self. ClusterCheckBox.SetToolTip( u"Plot convex hulls of particle clusters if available" )
+        
+        OptionsSizer.Add( self. ClusterCheckBox, 0, wx.ALL, 5 )
+        
         self.SaveOptionsButton = wx.Button( OptionsSizer.GetStaticBox(), wx.ID_ANY, u"Save options", wx.DefaultPosition, wx.DefaultSize, 0 )
         OptionsSizer.Add( self.SaveOptionsButton, 0, wx.ALIGN_RIGHT|wx.ALL, 5 )
         
@@ -113,6 +118,7 @@ class MainFrame ( wx.Frame ):
         self.PlotButton.Bind( wx.EVT_BUTTON, self.OnPlotButton )
         self.AboutButton.Bind( wx.EVT_BUTTON, self.OnAboutButton )
         self.ExitButton.Bind( wx.EVT_BUTTON, self.OnClose )
+        self.SaveOptionsButton.Bind( wx.EVT_BUTTON, self.OnSaveOptionsButton )
     
     def __del__( self ):
         pass
@@ -126,6 +132,9 @@ class MainFrame ( wx.Frame ):
         event.Skip()
     
     def OnClose( self, event ):
+        event.Skip()
+    
+    def OnSaveOptionsButton( self, event ):
         event.Skip()
     
 
