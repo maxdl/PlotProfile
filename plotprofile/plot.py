@@ -25,7 +25,11 @@ class Profile(object):
         self.psdli = []
         self.vesli = []
         self.clusterli = []
+        self.s_clusterli = []
+        self.l_clusterli = []
         self.mcli = []
+        self.s_mcli = []
+        self.l_mcli = []
         self.holeli = []
         self.warning = ''
 
@@ -68,20 +72,13 @@ class Profile(object):
             raise ProfileError("Could not open input file")
         while li:
             s = li.pop(0).replace('\n', '').strip()
-            if s.split(' ')[0].upper() == 'INPUT_FILE':
+            if s.split(' ')[0].upper() in ('PROFILE_ID', 'COMMENT', 'PROFILE_TYPE',
+                                           'PRESYNAPTIC_PROFILE', 'POSTSYNAPTIC_PROFILE'):
+                pass       # These are valid entries but not used here, so just skip
+            elif s.split(' ')[0].upper() == 'INPUT_FILE':
                 self.src_coord_file = s.lstrip('INPUT_FILE ')
             elif s.split(' ')[0].upper() == 'IMAGE':
                 self.src_img = s.split(' ')[1]
-            elif s.split(' ')[0].upper() == 'PROFILE_ID':
-                try:
-                    self.id = int(s.split(' ')[1])
-                except (IndexError, ValueError):
-                    self.id = 0  # This is not really used so we silently suppress errors
-            elif s.split(' ')[0].upper() == 'COMMENT':
-                try:
-                    self.comment = s.split(' ', 1)[1]
-                except IndexError:
-                    self.comment = ''
             elif s.split(' ')[0].upper() == 'PIXELWIDTH':
                 try:
                     self.pixelwidth = float(s.split(' ')[1])
@@ -94,15 +91,6 @@ class Profile(object):
                     self.posloc = self.to_metric_units([float(x), float(y)])
                 except (IndexError, ValueError):
                     raise ProfileError(self, "POSLOC not valid")
-            elif s.upper() == "POSTSYNAPTIC_PROFILE":
-                self.pospro = s.split(' ', 1)[1]
-            elif s.upper() == "PRESYNAPTIC_PROFILE":
-                self.prepro = s.split(' ', 1)[1]
-            elif s.split(" ")[0].upper() == "PROFILE_TYPE":
-                try:
-                    self.profile_type = s.split(" ", 1)[1]
-                except IndexError:
-                    self.profile_type = ''
             elif s.upper() == "POSTSYNAPTIC_ELEMENT":
                 self.posm = self.get_coords(li, 'open_path')
             elif s.upper() == "PRESYNAPTIC_ELEMENT":
@@ -130,16 +118,29 @@ class Profile(object):
                 self.randomli = self.get_coords(li)
             elif s.split(' ')[0].upper() == 'CLUSTER_CONVEX_HULL':
                 self.clusterli.append(self.get_coords(li, 'closed_path'))
+            elif s.split(' ')[0].upper() == 'CLUSTER_CONVEX_HULL_SMALL':
+                self.s_clusterli.append(self.get_coords(li, 'closed_path'))
+            elif s.split(' ')[0].upper() == 'CLUSTER_CONVEX_HULL_LARGE':
+                self.l_clusterli.append(self.get_coords(li, 'closed_path'))
             elif s.split(' ')[0].upper() == 'MONTE_CARLO':
                 self.mcli.append(self.get_coords(li))
+            elif s.split(' ')[0].upper() == 'MONTE_CARLO_SMALL':
+                self.s_mcli.append(self.get_coords(li))
+            elif s.split(' ')[0].upper() == 'MONTE_CARLO_LARGE':
+                self.l_mcli.append(self.get_coords(li))
             elif s.upper() == 'GRID':
                 # Retrieve coordinates to dummy variable as they will not be used
-                __ = self.get_coords(li)
                 raise ProfileError("Grid found; however, grids are no longer supported.")
             elif s[0] != "#":  # unless specifically commented out
                 raise ProfileError("Unrecognized string '" + s + "' in input file")
 
     def plot(self):
+        def plot_points(li, core_properties, **args):
+            if not li:
+                return
+            x, y = zip(*li)
+            plt.plot(x, y, core_properties, **args)
+
         plt.clf()
         plt.title(self.src_coord_file, size='small')
         if self.opt.scale == 'metric':
@@ -148,46 +149,36 @@ class Profile(object):
             axis_label = 'pixels'
         plt.ylabel(axis_label)
         plt.xlabel(axis_label)
-        if self.posm:
-            x, y = zip(*self.posm)
-            plt.plot(x, y, 'b-')
-        if self.prsm:
-            x, y = zip(*self.prsm)
-            plt.plot(x, y, 'g-')
-        if self.path:
-            x, y = zip(*self.path)
-            plt.plot(x, y, 'b-')
+        plot_points(self.posm, 'b-')
+        plot_points(self.prsm, 'g-')
+        plot_points(self.path, 'b-')
         if self.posloc:
             plt.plot(self.posloc[0], self.posloc[1], 'Pg')
         for psd in self.psdli:
-            x, y = zip(*psd)
-            plt.plot(x, y, 'm-')
+            plot_points(psd, 'm-')
         for v in self.vesli:
-            x, y = zip(*v)
-            plt.plot(x, y, 'g-')
+            plot_points(v, 'g-')
         for hole in self.holeli:
-            x, y = zip(*hole)
-            plt.plot(x, y, 'r-')
+            plot_points(hole, 'r-')
         if self.opt.plot_cluster_convex_hulls:
             for cluster in self.clusterli:
-                x, y = zip(*cluster)
-                plt.plot(x, y, 'k-', alpha=0.5)
-        if self.pli:
-            x, y = zip(*self.pli)
-            plt.plot(x, y, 'ko', markersize=3)
-        if self.spli:
-            x, y = zip(*self.spli)
-            plt.plot(x, y, 'ko', markersize=2)
-        if self.lpli:
-            x, y = zip(*self.lpli)
-            plt.plot(x, y, 'go', markersize=4)
+                plot_points(cluster, 'k-', alpha=0.5)
+            for cluster in self.s_clusterli:
+                plot_points(cluster, 'k-', alpha=0.5)
+            for cluster in self.l_clusterli:
+                plot_points(cluster, 'k-', alpha=0.5)
+        plot_points(self.pli, 'ko', markersize=3)
+        plot_points(self.spli, 'ko', markersize=2)
+        plot_points(self.lpli, 'go', markersize=4)
         if self.opt.plot_random_points and self.randomli:
-            x, y = zip(*self.randomli)
-            plt.plot(x, y, 'y+', alpha=0.5, markersize=3)
+            plot_points(self.randomli, 'y+', alpha=0.5, markersize=3)
         if self.opt.plot_simulated_points:
             for mc in self.mcli:
-                x, y = zip(*mc)
-                plt.plot(x, y, "co", alpha=0.5, markersize=1)
+                plot_points(mc, 'co', alpha=0.5, markersize=1)
+            for mc in self.s_mcli:
+                plot_points(mc, 'ko', alpha=0.1, markersize=1)
+            for mc in self.l_mcli:
+                plot_points(mc, 'go', alpha=0.1, markersize=4)
         if self.opt.invert_y_axis:
             plt.gca().invert_yaxis()
         plt.show()
