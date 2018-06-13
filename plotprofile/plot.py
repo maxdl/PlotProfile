@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import matplotlib.pyplot as plt
+import os.path
 
 
 class Profile(object):
@@ -135,50 +136,50 @@ class Profile(object):
                 raise ProfileError("Unrecognized string '" + s + "' in input file")
 
     def plot(self):
-        def plot_points(li, core_properties, **args):
+        def plot_component(li, core_properties, **args):
             if not li:
                 return
             x, y = zip(*li)
             plt.plot(x, y, core_properties, **args)
 
         plt.clf()
-        plt.title(self.src_coord_file, size='small')
+        plt.title(os.path.basename(self.input_fn), size='small')
         if self.opt.scale == 'metric':
             axis_label = self.metric_unit
         else:
             axis_label = 'pixels'
         plt.ylabel(axis_label)
         plt.xlabel(axis_label)
-        plot_points(self.posm, 'b-')
-        plot_points(self.prsm, 'g-')
-        plot_points(self.path, 'b-')
+        plot_component(self.posm, 'b-')
+        plot_component(self.prsm, 'g-')
+        plot_component(self.path, 'b-')
         if self.posloc:
-            plt.plot(self.posloc[0], self.posloc[1], 'Pg')
+            plot_component([self.posloc], 'Pg')
         for psd in self.psdli:
-            plot_points(psd, 'm-')
+            plot_component(psd, 'm-')
         for v in self.vesli:
-            plot_points(v, 'g-')
+            plot_component(v, 'g-')
         for hole in self.holeli:
-            plot_points(hole, 'r-')
+            plot_component(hole, 'r-')
         if self.opt.plot_cluster_convex_hulls:
             for cluster in self.clusterli:
-                plot_points(cluster, 'k-', alpha=0.5)
+                plot_component(cluster, 'k-', alpha=0.5)
             for cluster in self.s_clusterli:
-                plot_points(cluster, 'k-', alpha=0.5)
+                plot_component(cluster, 'k-', alpha=0.5)
             for cluster in self.l_clusterli:
-                plot_points(cluster, 'k-', alpha=0.5)
-        plot_points(self.pli, 'ko', markersize=3)
-        plot_points(self.spli, 'ko', markersize=2)
-        plot_points(self.lpli, 'go', markersize=4)
-        if self.opt.plot_random_points and self.randomli:
-            plot_points(self.randomli, 'y+', alpha=0.5, markersize=3)
+                plot_component(cluster, 'k-', alpha=0.5)
+        plot_component(self.pli, 'ko', markersize=3)
+        plot_component(self.spli, 'ko', markersize=2)
+        plot_component(self.lpli, 'go', markersize=4)
+        if self.opt.plot_random_points:
+            plot_component(self.randomli, 'y+', alpha=0.5, markersize=3)
         if self.opt.plot_simulated_points:
             for mc in self.mcli:
-                plot_points(mc, 'co', alpha=0.5, markersize=1)
+                plot_component(mc, 'co', alpha=0.2, markersize=1)
             for mc in self.s_mcli:
-                plot_points(mc, 'ko', alpha=0.1, markersize=1)
+                plot_component(mc, 'ko', alpha=0.1, markersize=1)
             for mc in self.l_mcli:
-                plot_points(mc, 'go', alpha=0.1, markersize=4)
+                plot_component(mc, 'go', alpha=0.1, markersize=4)
         if self.opt.invert_y_axis:
             plt.gca().invert_yaxis()
         plt.show()

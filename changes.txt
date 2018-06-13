@@ -1,3 +1,10 @@
+2018-06-13:
+- Added a "Plot next" button, that selects and plots the next file
+  in the current folder.
+- Plot title now only includes the file name, not the full path.
+- Regular Monte Carlo points are now a little more transparent.
+- Fixed bug that failed to set scale to metric units even if it
+  should be according to ~/.plotprofile.cfg.
 2018-05-22:
 - Convex hulls of particle clusters can now be plotted.
 - Decreased size of markers for particle and simulated points.

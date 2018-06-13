@@ -37,19 +37,24 @@ class MainFrame ( wx.Frame ):
         self.SelectFileText.Wrap( -1 )
         InputSizer.Add( self.SelectFileText, 0, wx.ALL, 5 )
         
-        self.SelectFilePicker = wx.FilePickerCtrl( self.InputPanel, wx.ID_ANY, wx.EmptyString, u"Select a file", u"*.dtp;*.d2p;*.pd;*.pdd;*.pds;*.syn;*.ves", wx.DefaultPosition, wx.DefaultSize, wx.FLP_DEFAULT_STYLE|wx.FLP_OPEN )
+        self.SelectFilePicker = wx.FilePickerCtrl( self.InputPanel, wx.ID_ANY, wx.EmptyString, u"Select a file", u"*.dtp;*.d2p;*.pd;*.pdd;*.pds;*.syn;*.ves", wx.DefaultPosition, wx.DefaultSize, wx.FLP_DEFAULT_STYLE|wx.FLP_FILE_MUST_EXIST|wx.FLP_OPEN|wx.FLP_USE_TEXTCTRL )
         InputSizer.Add( self.SelectFilePicker, 0, wx.ALL, 5 )
         
-        ButtonSizer = wx.FlexGridSizer( 2, 2, 0, 0 )
+        ButtonSizer = wx.FlexGridSizer( 3, 2, 0, 0 )
         ButtonSizer.SetFlexibleDirection( wx.BOTH )
         ButtonSizer.SetNonFlexibleGrowMode( wx.FLEX_GROWMODE_SPECIFIED )
         
-        self.SpacerLabel = wx.StaticText( self.InputPanel, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0 )
-        self.SpacerLabel.Wrap( -1 )
-        ButtonSizer.Add( self.SpacerLabel, 0, wx.ALL, 5 )
         
-        self.PlotButton = wx.Button( self.InputPanel, wx.ID_ANY, u"Plot!", wx.DefaultPosition, wx.DefaultSize, 0 )
-        ButtonSizer.Add( self.PlotButton, 0, wx.ALIGN_BOTTOM|wx.ALL, 5 )
+        ButtonSizer.Add( ( 0, 0), 1, wx.EXPAND, 5 )
+        
+        self.PlotSelectedButton = wx.Button( self.InputPanel, wx.ID_ANY, u"Plot selected", wx.DefaultPosition, wx.DefaultSize, 0 )
+        ButtonSizer.Add( self.PlotSelectedButton, 0, wx.ALIGN_BOTTOM|wx.ALL, 5 )
+        
+        
+        ButtonSizer.Add( ( 0, 0), 1, wx.EXPAND, 5 )
+        
+        self.PlotNextButton = wx.Button( self.InputPanel, wx.ID_ANY, u"Plot next", wx.DefaultPosition, wx.DefaultSize, 0 )
+        ButtonSizer.Add( self.PlotNextButton, 0, wx.ALIGN_RIGHT|wx.ALL, 5 )
         
         self.AboutButton = wx.Button( self.InputPanel, wx.ID_ANY, u"About...", wx.DefaultPosition, wx.DefaultSize, 0 )
         ButtonSizer.Add( self.AboutButton, 1, wx.ALL, 5 )
@@ -85,6 +90,7 @@ class MainFrame ( wx.Frame ):
         OptionsSizer.Add( self.InvertYAxisCheckBox, 0, wx.ALL, 5 )
         
         self.SimulatedCheckBox = wx.CheckBox( OptionsSizer.GetStaticBox(), wx.ID_ANY, u"Plot Monte Carlo simulated points", wx.DefaultPosition, wx.DefaultSize, 0 )
+        self.SimulatedCheckBox.SetValue(True) 
         self.SimulatedCheckBox.SetToolTip( u"Plot simulated points if available" )
         
         OptionsSizer.Add( self.SimulatedCheckBox, 0, wx.ALL, 5 )
@@ -106,7 +112,7 @@ class MainFrame ( wx.Frame ):
         self.OptionsPanel.SetSizer( OptionsSizer )
         self.OptionsPanel.Layout()
         OptionsSizer.Fit( self.OptionsPanel )
-        MainSizer.Add( self.OptionsPanel, 1, wx.EXPAND |wx.ALL, 5 )
+        MainSizer.Add( self.OptionsPanel, 1, wx.ALIGN_RIGHT|wx.ALL|wx.EXPAND, 5 )
         
         
         self.SetSizer( MainSizer )
@@ -115,7 +121,8 @@ class MainFrame ( wx.Frame ):
         self.Centre( wx.BOTH )
         
         # Connect Events
-        self.PlotButton.Bind( wx.EVT_BUTTON, self.OnPlotButton )
+        self.PlotSelectedButton.Bind( wx.EVT_BUTTON, self.OnPlotSelectedButton )
+        self.PlotNextButton.Bind( wx.EVT_BUTTON, self.OnPlotNextButton )
         self.AboutButton.Bind( wx.EVT_BUTTON, self.OnAboutButton )
         self.ExitButton.Bind( wx.EVT_BUTTON, self.OnClose )
         self.SaveOptionsButton.Bind( wx.EVT_BUTTON, self.OnSaveOptionsButton )
@@ -125,7 +132,10 @@ class MainFrame ( wx.Frame ):
     
     
     # Virtual event handlers, overide them in your derived class
-    def OnPlotButton( self, event ):
+    def OnPlotSelectedButton( self, event ):
+        event.Skip()
+    
+    def OnPlotNextButton( self, event ):
         event.Skip()
     
     def OnAboutButton( self, event ):

@@ -36,23 +36,22 @@ class Frame(gui.MainFrame):
             appid = 'PlotProfile'  # arbitrary string
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
 
-    def OnPlotButton(self, event):
-
-        def find_in_dict(s, di):
-            for key, val in di.items():
-                if key.find(s) != -1 and val:
-                    return True
-            return False
-
+    def OnPlotSelectedButton(self, event):
         if not self.SelectFilePicker.GetPath():
             self.show_warning("No file to plot.")
             return
-        self.set_options_from_ui()
-        exitcode, msg = plot.main(self.input_fn, self.opt)
-        if exitcode == 1:
-            self.show_error(msg)
-        elif exitcode == 2:
-            self.show_warning(msg)
+        self.do_plot()
+
+    def OnPlotNextButton(self, event):
+        if not self.SelectFilePicker.GetPath():
+            self.show_warning("No file to plot.")
+            return
+        folder, current_file = os.path.split(self.SelectFilePicker.GetPath())
+        fileli = sorted([f for f in os.listdir(folder)
+                         if os.path.splitext(f)[1] in options.extensions])
+        next_file = fileli[(fileli.index(current_file) + 1) % len(fileli)]
+        self.SelectFilePicker.SetPath(os.path.join(folder, next_file))
+        self.do_plot()
 
     def OnSaveOptionsButton(self, event):
         if self.save_options_to_config():
@@ -69,9 +68,14 @@ class Frame(gui.MainFrame):
         self.save_input_dir_to_config()
         self.Destroy()
 
-#
-#   utilities
-#
+    def do_plot(self):
+        self.set_options_from_ui()
+        exitcode, msg = plot.main(self.input_fn, self.opt)
+        if exitcode == 1:
+            self.show_error(msg)
+        elif exitcode == 2:
+            self.show_warning(msg)
+
     def save_input_dir_to_config(self):
         config = configparser.ConfigParser()
         try:
@@ -185,7 +189,7 @@ class Frame(gui.MainFrame):
         check_bool_option('plot_cluster_convex_hulls')
 
     def set_options_in_ui(self):
-        if self.opt.scale == 'metric units':
+        if self.opt.scale == 'metric':
             self.ScaleRadioBox.SetStringSelection('Metric units')
         else:
             self.ScaleRadioBox.SetStringSelection('Pixel units')

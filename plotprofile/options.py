@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+extensions = ['.dtp', '.d2p', '.pd', '.pdd', '.pds', '.syn', '.ves']
+
 
 class OptionData(object):
 	def __init__(self):
