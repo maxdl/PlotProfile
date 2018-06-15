@@ -1,3 +1,9 @@
+2018-06-15:
+- Added batch plotting, allowing automatic saving of plots of
+  all coordinate files in a folder.
+- Adjusted user interface layout.
+- Removed ability to resize the window.
+- Now saves current input folder correctly between sessions.
 2018-06-13:
 - Added a "Plot next" button, that selects and plots the next file
   in the current folder.

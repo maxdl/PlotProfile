@@ -20,10 +20,15 @@ class Frame(gui.MainFrame):
         dt = FileDropTarget(self)
         self.InputPanel.SetDropTarget(dt)
         self.opt = options.OptionData()
+        self.input_fn = ''
+        self.batch_input_dir = ''
         self.configfn = os.path.normpath(os.path.expanduser('~/.%s.cfg' % version.title.lower()))
         self.get_input_dir_from_config()
         self.load_options_from_config()
         self.set_options_in_ui()
+        self.SelectFilePicker.SetInitialDirectory(os.getcwd())
+        self.InputDirPicker.SetInitialDirectory(os.getcwd())
+        self.OutputDirPicker.SetInitialDirectory(os.getcwd())
         self.Fit()
 
     @staticmethod
@@ -40,7 +45,7 @@ class Frame(gui.MainFrame):
         if not self.SelectFilePicker.GetPath():
             self.show_warning("No file to plot.")
             return
-        self.do_plot()
+        self.do_plot(batch_mode=False)
 
     def OnPlotNextButton(self, event):
         if not self.SelectFilePicker.GetPath():
@@ -51,7 +56,20 @@ class Frame(gui.MainFrame):
                          if os.path.splitext(f)[1] in options.extensions])
         next_file = fileli[(fileli.index(current_file) + 1) % len(fileli)]
         self.SelectFilePicker.SetPath(os.path.join(folder, next_file))
-        self.do_plot()
+        self.do_plot(batch_mode=False)
+
+    def OnBatchPlotButton(self, event):
+        if not self.InputDirPicker.GetPath():
+            self.show_warning("No input folder selected.")
+            return
+        self.do_plot(batch_mode=True)
+
+    def OnOutputFormatChoice(self, event):
+        use_png = "png" in self.OutputFormatChoice.GetStringSelection()
+        self.OutputBackgroundLabel.Enable(use_png)
+        self.OutputBackgroundChoice.Enable(use_png)
+        self.OutputResolutionLabel.Enable(use_png)
+        self.OutputResolutionSpinCtrl.Enable(use_png)
 
     def OnSaveOptionsButton(self, event):
         if self.save_options_to_config():
@@ -68,13 +86,41 @@ class Frame(gui.MainFrame):
         self.save_input_dir_to_config()
         self.Destroy()
 
-    def do_plot(self):
-        self.set_options_from_ui()
-        exitcode, msg = plot.main(self.input_fn, self.opt)
-        if exitcode == 1:
-            self.show_error(msg)
-        elif exitcode == 2:
-            self.show_warning(msg)
+    def do_plot(self, batch_mode=False):
+
+        def plot_file(fn):
+            nonlocal n_err
+            exitcode, exitmsg = plot.main(fn, self.opt, batch_mode)
+            if exitcode == 1:
+                self.show_error(exitmsg)
+                n_err += 1
+            elif exitcode == 2:
+                self.show_warning(exitmsg)
+
+        self.get_options_from_ui()
+        n_err = 0
+        if batch_mode:
+            fileli = sorted([os.path.join(self.batch_input_dir, f)
+                             for f in os.listdir(self.batch_input_dir)
+                             if os.path.splitext(f)[1] in options.extensions])
+            if not os.path.isabs(self.opt.batch_output_dir):
+                self.opt.batch_output_dir = os.path.abspath(os.path.join(self.batch_input_dir,
+                                                                         self.opt.batch_output_dir))
+            if not os.path.exists(self.opt.batch_output_dir):
+                os.mkdir(self.opt.batch_output_dir)
+            for n, f in enumerate(fileli):
+                self.StatusBar.SetStatusText("Batch plotting: %d %% done (processing %s)"
+                                             % (n / len(fileli) * 100, os.path.basename(f)))
+                plot_file(f)
+                self.Update()
+            self.StatusBar.SetStatusText("Batch plotting done.")
+            msg = "%d plot(s) saved to %s." % (len(fileli) - n_err, self.opt.batch_output_dir)
+            if n_err > 0:
+                msg = msg + "\n%d file(s) generated errors and could not be plotted." % n_err
+            self.show_message(msg)
+            self.StatusBar.SetStatusText("")
+        else:
+            plot_file(self.input_fn)
 
     def save_input_dir_to_config(self):
         config = configparser.ConfigParser()
@@ -90,7 +136,7 @@ class Frame(gui.MainFrame):
                 config.write(f)
         except IOError:
             self.show_error("Configuration file\n(%s)\ncould not be saved."
-                             % self.configfn)
+                            % self.configfn)
 
     def get_input_dir_from_config(self):
         config = configparser.ConfigParser()
@@ -121,7 +167,7 @@ class Frame(gui.MainFrame):
             nonlocal config
             config['Options'][option] = str(getattr(self.opt, option))
 
-        self.set_options_from_ui()
+        self.get_options_from_ui()
         config = configparser.ConfigParser()
         try:
             config.read(self.configfn)
@@ -134,6 +180,9 @@ class Frame(gui.MainFrame):
         set_option('plot_simulated_points')
         set_option('plot_random_points')
         set_option('plot_cluster_convex_hulls')
+        set_option('output_format')
+        set_option('output_background')
+        set_option('output_resolution')
         try:
             with open(self.configfn, 'w') as f:
                 config.write(f)
@@ -151,6 +200,15 @@ class Frame(gui.MainFrame):
 
         def check_str_option(opt, valid_strings=()):
             if getattr(self.opt, opt) not in valid_strings:
+                show_invalid_option_warning(opt)
+                setattr(self.opt, opt, getattr(defaults, opt))
+
+        def check_int_option(opt, min, max):
+            try:
+                setattr(self.opt, opt, int(getattr(self.opt, opt)))
+                if not min <= int(getattr(self.opt, opt)) <= max:
+                    raise ValueError
+            except ValueError:
                 show_invalid_option_warning(opt)
                 setattr(self.opt, opt, getattr(defaults, opt))
 
@@ -187,6 +245,9 @@ class Frame(gui.MainFrame):
         check_bool_option('plot_simulated_points')
         check_bool_option('plot_random_points')
         check_bool_option('plot_cluster_convex_hulls')
+        check_str_option('output_format', ('eps', 'png', 'pdf', 'svg'))
+        check_str_option('output_background', ('transparent', 'white'))
+        check_int_option('output_resolution', min=1, max=1200)
 
     def set_options_in_ui(self):
         if self.opt.scale == 'metric':
@@ -198,8 +259,23 @@ class Frame(gui.MainFrame):
         self.SimulatedCheckBox.SetValue(self.opt.plot_simulated_points)
         self.RandomCheckBox.SetValue(self.opt.plot_random_points)
         self.ClusterCheckBox.SetValue(self.opt.plot_cluster_convex_hulls)
+        if self.opt.output_format == 'eps':
+            self.OutputFormatChoice.SetStringSelection('Encapsulated Postscript (.eps)')
+        if self.opt.output_format == 'png':
+            self.OutputFormatChoice.SetStringSelection('Portable Network Graphics (.png)')
+        if self.opt.output_format == 'pdf':
+            self.OutputFormatChoice.SetStringSelection('Portable Document Format (.pdf)')
+        if self.opt.output_format == 'svg':
+            self.OutputFormatChoice.SetStringSelection('Scalable Vector Graphics (.svg)')
+        self.OutputBackgroundChoice.SetStringSelection(self.opt.output_background.capitalize())
+        self.OutputResolutionSpinCtrl.SetValue(self.opt.output_resolution)
+        use_png = "png" in self.OutputFormatChoice.GetStringSelection()
+        self.OutputBackgroundLabel.Enable(use_png)
+        self.OutputBackgroundChoice.Enable(use_png)
+        self.OutputResolutionLabel.Enable(use_png)
+        self.OutputResolutionSpinCtrl.Enable(use_png)
 
-    def set_options_from_ui(self):
+    def get_options_from_ui(self):
         self.input_fn = self.SelectFilePicker.GetPath()
         if self.ScaleRadioBox.GetStringSelection() == 'Metric units':
             self.opt.scale = 'metric'
@@ -209,6 +285,18 @@ class Frame(gui.MainFrame):
         self.opt.plot_simulated_points = self.SimulatedCheckBox.GetValue()
         self.opt.plot_random_points = self.RandomCheckBox.GetValue()
         self.opt.plot_cluster_convex_hulls = self.ClusterCheckBox.GetValue()
+        if self.OutputFormatChoice.GetStringSelection() == 'Encapsulated Postscript (.eps)':
+            self.opt.output_format = 'eps'
+        if self.OutputFormatChoice.GetStringSelection() == 'Portable Network Graphics (.png)':
+            self.opt.output_format = 'png'
+        if self.OutputFormatChoice.GetStringSelection() == 'Portable Document Format (.pdf)':
+            self.opt.output_format = 'pdf'
+        if self.OutputFormatChoice.GetStringSelection() == 'Scalable Vector Graphics (.svg)':
+            self.opt.output_format = 'svg'
+        self.batch_input_dir = self.InputDirPicker.GetPath()
+        self.opt.batch_output_dir = self.OutputDirPicker.GetPath()
+        self.opt.output_background = self.OutputBackgroundChoice.GetStringSelection().lower()
+        self.opt.output_resolution = self.OutputResolutionSpinCtrl.GetValue()
 
     def show_message(self, s):
         dlg = wx.MessageDialog(self, s, version.title, wx.OK | wx.ICON_INFORMATION)
@@ -272,5 +360,4 @@ class AboutDialog(gui.AboutDialog):
 
     def OnClose(self, event):
         self.Destroy()
-
 

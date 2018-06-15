@@ -135,7 +135,7 @@ class Profile(object):
             elif s[0] != "#":  # unless specifically commented out
                 raise ProfileError("Unrecognized string '" + s + "' in input file")
 
-    def plot(self):
+    def plot(self, batch_mode):
         def plot_component(li, core_properties, **args):
             if not li:
                 return
@@ -182,7 +182,13 @@ class Profile(object):
                 plot_component(mc, 'go', alpha=0.1, markersize=4)
         if self.opt.invert_y_axis:
             plt.gca().invert_yaxis()
-        plt.show()
+        if not batch_mode:
+            plt.show()
+        else:
+            fn = os.path.join(self.opt.batch_output_dir,
+                              "%s.%s" % (os.path.basename(self.input_fn), self.opt.output_format))
+            plt.savefig(fn, format=self.opt.output_format, dpi=self.opt.output_resolution,
+                        transparent=(self.opt.output_background == 'transparent'))
 
 
 class ProfileError(Exception):
@@ -203,11 +209,11 @@ def read_file(fname):
     return s
 
 
-def main(input_fn, opt):
+def main(input_fn, opt, batch_mode=False):
     try:
         profile = Profile(input_fn, opt)
         profile.parse()
-        profile.plot()
+        profile.plot(batch_mode)
     except ProfileError as err:
         return 1, err.msg
     return 0, ""

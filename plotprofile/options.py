@@ -11,3 +11,7 @@ class OptionData(object):
 		self.plot_simulated_points = False
 		self.plot_random_points = False
 		self.plot_cluster_convex_hulls = False
+		self.batch_output_dir = ''
+		self.output_format = 'pdf'
+		self.output_background = 'transparent'
+		self.output_resolution = 300
